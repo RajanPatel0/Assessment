@@ -36,11 +36,5 @@ taskSchema.index({ createdBy: 1, createdAt: -1 });
 taskSchema.index({ status: 1 });
 taskSchema.index({ title: 'text', description: 'text' });
 
-//for updateat on same
-taskSchema.pre('save', function(next) {
-  this.updatedAt = Date.now();
-  next();
-});
-
 const Task = mongoose.model("Task", taskSchema);
 export default Task;

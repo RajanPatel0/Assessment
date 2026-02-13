@@ -19,25 +19,15 @@ const userSchema = new mongoose.Schema({
     updatedAt: { type: Date, default: Date.now }
 }, { timestamps: true});
 
-userSchema.index({ email: 1 });
 userSchema.index({ role: 1 });
 
 userSchema.pre('save', async function(next) {
-  if(!this.isModified('password')) return next();
-  try{
-    if(this.isModified("password")) {
-        this.password = await bcrypt.hash(this.password, 10);
-        next();
-    }
-  }catch(error){
-    next(error);
+   if (!this.isModified("password")) return;
+  if(this.isModified("password")) {
+    this.password = await bcrypt.hash(this.password, 10);
   }
+  next;
 }); 
-
-userSchema.pre('save', function(next) {
-  this.updatedAt = Date.now();
-  next();
-});
 
 const User = mongoose.model("User", userSchema);
 export default User;
