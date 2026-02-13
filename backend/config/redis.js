@@ -5,33 +5,40 @@ dotenv.config();
 
 let redis = null;
 
-try {
-  redis = new Redis(process.env.REDIS_URL, {
-    lazyConnect: true,
-    maxRetriesPerRequest: null,
-    retryStrategy(times) {
-      if (times > 5) return null; // stop retrying
-      return Math.min(times * 200, 2000);
-    },
-    enableReadyCheck: false,
-    tls: {} // REQUIRED for Upstash
-  });
+// Only try to connect if REDIS_URL is provided
+if (process.env.REDIS_URL && process.env.REDIS_URL !== 'undefined') {
+  try {
+    redis = new Redis(process.env.REDIS_URL, {
+      lazyConnect: true,
+      maxRetriesPerRequest: null,
+      retryStrategy(times) {
+        if (times > 3) return null; // reduce retries in production
+        return Math.min(times * 200, 1000);
+      },
+      enableReadyCheck: false,
+      tls: process.env.NODE_ENV === 'production' ? {} : undefined // TLS for production
+    });
 
-  redis.on("connect", () => {
-    console.log("Redis Connected (Upstash)");
-  });
+    redis.on("connect", () => {
+      console.log("✅ Redis Connected Successfully");
+    });
 
-  redis.on("error", (err) => {
-    console.log("Redis Error → cache disabled:", err.message);
-    redis.disconnect();
+    redis.on("error", (err) => {
+      console.log("⚠️ Redis Error → cache disabled:", err.message);
+      redis = null;
+    });
+
+    // Don't await connect here, let it happen in background
+    redis.connect().catch(() => {
+      redis = null;
+    });
+
+  } catch (err) {
+    console.log("⚠️ Redis init failed → running without cache");
     redis = null;
-  });
-
-  await redis.connect();
-
-} catch (err) {
-  console.log("Redis init failed → running without cache");
-  redis = null;
+  }
+} else {
+  console.log("⚠️ No Redis URL provided → running without cache");
 }
 
 export const setCache = async (key, value, ttl = 600) => {
@@ -64,5 +71,17 @@ export const deleteCache = async (key) => {
   }
 };
 
+export const deleteCachePattern = async (pattern) => {
+  if (!redis) return false;
+  try {
+    const keys = await redis.keys(pattern);
+    if (keys.length > 0) {
+      await redis.del(keys);
+    }
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 export default redis;
