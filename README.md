@@ -6,6 +6,7 @@ A full-stack task management application with Role-Based Access Control (RBAC), 
 
 - Frontend: (https://task-manager-omega-inky-66.vercel.app)
 - Backend API: (https://taskmanager-backend-lg28.onrender.com)
+- API Documentation(Postman): (https://documenter.getpostman.com/view/48198571/2sBXcBnhM5)
 
 ## 📋 Features
 
